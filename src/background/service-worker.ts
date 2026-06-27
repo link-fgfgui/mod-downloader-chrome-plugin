@@ -26,7 +26,12 @@ async function fetchPageContent(url: string): Promise<string | null> {
   }
 }
 
-async function extractProjectIdFromTab(tabId: number): Promise<string | null> {
+interface TabExtractResult {
+  slug: string | null
+  projectId: string | null
+}
+
+async function extractFromTab(tabId: number): Promise<TabExtractResult> {
   try {
     const results = await chrome.scripting.executeScript({
       target: { tabId },
@@ -34,32 +39,52 @@ async function extractProjectIdFromTab(tabId: number): Promise<string | null> {
         const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
         const href = canonical?.href ?? ''
 
-        let m = href.match(/modrinth\.com\/project\/([^/?#]+)/)
-        if (m) return m[1]
+        let slug: string | null = null
+        let projectId: string | null = null
 
-        m = href.match(/curseforge\.com\/minecraft\/mc-mods\/([^/?#]+)/)
-        if (m) return m[1]
+        let m = href.match(/curseforge\.com\/minecraft\/mc-mods\/([^/?#]+)/)
+        if (m) slug = m[1]
 
-        const body = document.body?.innerText ?? ''
-        m = body.match(/"project_id"\s*:\s*"([^"]+)"/)
-        if (m) return m[1]
+        if (!slug) {
+          m = href.match(/modrinth\.com\/project\/([^/?#]+)/)
+          if (m) slug = m[1]
+        }
 
-        m = body.match(/"identifier"\s*:\s*"(\d+)"/)
-        if (m) return m[1]
+        if (!slug) {
+          const body = document.body?.innerText ?? ''
+          m = body.match(/maven\.modrinth:([A-Za-z0-9_-]+):/)
+          if (m) slug = m[1]
+        }
 
-        m = body.match(/data-project-id="(\d+)"/)
-        if (m) return m[1]
+        if (!projectId) {
+          const body = document.body?.innerText ?? ''
+          m = body.match(/"project_id"\s*:\s*"(\d+)"/)
+          if (m) projectId = m[1]
+        }
+        if (!projectId) {
+          const body = document.body?.innerText ?? ''
+          m = body.match(/"identifier"\s*:\s*"(\d+)"/)
+          if (m) projectId = m[1]
+        }
+        if (!projectId) {
+          const body = document.body?.innerText ?? ''
+          m = body.match(/data-project-id="(\d+)"/)
+          if (m) projectId = m[1]
+        }
 
-        m = body.match(/maven\.modrinth:([A-Za-z0-9_-]+):/)
-        if (m) return m[1]
-
-        return null
+        return { slug, projectId }
       },
     })
-    const val = results?.[0]?.result
-    return typeof val === 'string' && val ? val : null
+    const val = results?.[0]?.result as TabExtractResult | undefined
+    if (val && typeof val === 'object') {
+      return {
+        slug: val.slug || null,
+        projectId: val.projectId || null,
+      }
+    }
+    return { slug: null, projectId: null }
   } catch {
-    return null
+    return { slug: null, projectId: null }
   }
 }
 
@@ -124,9 +149,10 @@ async function processTab(tab: chrome.tabs.Tab, allowedSites: SiteType[]): Promi
   // 仅对直接打开的 modrinth/curseforge 页面提取 projectId
   // mcmod 页面提取的 mod 来自不同平台，无法从当前 tab 获取各自的 projectId
   if (mods.length > 0 && !isMcmod) {
-    const projectId = await extractProjectIdFromTab(tab.id)
+    const { slug, projectId } = await extractFromTab(tab.id)
     for (const mod of mods) {
-      mod.projectId = projectId
+      if (projectId) mod.projectId = projectId
+      if (slug) mod.slug = slug
     }
   }
 
