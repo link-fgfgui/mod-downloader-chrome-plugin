@@ -55,5 +55,5 @@ export function parseModUrl(url: string): ModInfo | null {
 }
 
 export function isMcmodUrl(url: string): boolean {
-  return /mcmod\.cn/.test(url)
+  return /www\.mcmod\.cn/.test(url)
 }

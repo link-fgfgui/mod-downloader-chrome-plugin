@@ -1,27 +1,53 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import type { FilterConfig, ModInfo, ScanResult, SiteType } from './types'
 import { ALL_SITES, SITE_LABELS } from './types'
+import { t, foundMods, windowLabel, confirmSend } from './i18n'
 
 interface WinInfo {
   id: number
   label: string
 }
 
+interface TabInfo {
+  index: number
+  title: string
+}
+
 const windows = ref<WinInfo[]>([])
 const windowId = ref<number | null>(null)
+const tabStartIndex = ref<number | null>(null)
+const tabsInWindow = ref<TabInfo[]>([])
 const sites = ref<SiteType[]>([...ALL_SITES])
 const loading = ref(false)
 const results = ref<ModInfo[]>([])
 const errors = ref<string[]>([])
 const processed = ref(false)
-const copied = ref(false)
+const pendingSuspended = ref<string[] | null>(null)
+const skippedTabs = ref<string[]>([])
+
+async function refreshTabs(winId: number | null) {
+  if (winId == null) {
+    tabsInWindow.value = []
+    tabStartIndex.value = null
+    return
+  }
+  const tabs = await chrome.tabs.query({ windowId: winId })
+  tabsInWindow.value = tabs
+    .filter(tab => tab.index != null)
+    .map(tab => ({ index: tab.index!, title: tab.title || tab.url || '(no title)' }))
+    .sort((a, b) => a.index - b.index)
+  // 越界重置
+  if (tabStartIndex.value != null && tabStartIndex.value >= tabsInWindow.value.length) {
+    tabStartIndex.value = null
+  }
+}
 
 onMounted(async () => {
   const wins = await chrome.windows.getAll()
   windows.value = wins.map((w, i) => ({
     id: w.id!,
-    label: `窗口 ${i + 1}${w.focused ? ' (当前)' : ''}`,
+    label: `${windowLabel(i + 1)}${w.focused ? ` (${t.current})` : ''}`,
   }))
 
   const data = await chrome.storage.local.get('filter')
@@ -29,13 +55,21 @@ onMounted(async () => {
   if (filter) {
     windowId.value = filter.windowId
     sites.value = filter.sites.length > 0 ? [...filter.sites] : [...ALL_SITES]
+    tabStartIndex.value = filter.tabStartIndex ?? null
   }
+  await refreshTabs(windowId.value)
+})
+
+watch(windowId, async (newWin) => {
+  await refreshTabs(newWin)
+  saveFilter()
 })
 
 function saveFilter() {
   const filter: FilterConfig = {
     windowId: windowId.value,
     sites: sites.value,
+    tabStartIndex: windowId.value == null ? null : tabStartIndex.value,
   }
   chrome.storage.local.set({ filter })
 }
@@ -54,48 +88,80 @@ async function sendFiltered() {
   saveFilter()
   loading.value = true
   processed.value = false
-  copied.value = false
   results.value = []
   errors.value = []
+  pendingSuspended.value = null
+  skippedTabs.value = []
 
   try {
-    const response: ScanResult = await chrome.runtime.sendMessage({ action: 'scanFiltered' })
+    let response: ScanResult = await chrome.runtime.sendMessage({ action: 'scanFiltered' })
+    if (response.needConfirm && response.suspendedTabs?.length) {
+      pendingSuspended.value = response.suspendedTabs
+      loading.value = false
+      return
+    }
     results.value = response.mods
     errors.value = response.errors
-    if (response.mods.length) {
-      try {
-        const text = response.mods.map(m => m.url).join('\n')
-        await navigator.clipboard.writeText(text)
-        copied.value = true
-      } catch {
-        errors.value.push('复制到剪贴板失败')
-      }
-    }
+    skippedTabs.value = response.suspendedTabs ?? []
   } catch (e) {
-    errors.value = [`错误: ${e instanceof Error ? e.message : String(e)}`]
+    errors.value = [`${t.errorPrefix}: ${e instanceof Error ? e.message : String(e)}`]
   } finally {
     loading.value = false
     processed.value = true
   }
+}
+
+async function acceptConfirm() {
+  pendingSuspended.value = null
+  loading.value = true
+  try {
+    const response: ScanResult = await chrome.runtime.sendMessage({ action: 'scanFiltered', force: true })
+    results.value = response.mods
+    errors.value = response.errors
+    skippedTabs.value = response.suspendedTabs ?? []
+  } catch (e) {
+    errors.value = [`${t.errorPrefix}: ${e instanceof Error ? e.message : String(e)}`]
+  } finally {
+    loading.value = false
+    processed.value = true
+  }
+}
+
+function cancelConfirm() {
+  pendingSuspended.value = null
+  processed.value = true
+  results.value = []
+  errors.value = []
+  skippedTabs.value = []
 }
 </script>
 
 <template>
   <main class="options-page">
     <h1>Mod Downloader</h1>
-    <p class="subtitle">配置筛选条件后发送。</p>
+    <p class="subtitle">{{ t.subtitle }}</p>
 
     <section class="filter-section">
       <div class="filter-row">
-        <label class="filter-label">扫描窗口</label>
+        <label class="filter-label">{{ t.scanWindow }}</label>
         <select class="filter-select" v-model="windowId" @change="saveFilter">
-          <option :value="null">全部窗口</option>
+          <option :value="null">{{ t.allWindows }}</option>
           <option v-for="w in windows" :key="w.id" :value="w.id">{{ w.label }}</option>
         </select>
       </div>
 
+      <div v-if="windowId != null" class="filter-row">
+        <label class="filter-label">{{ t.startAfterTab }}</label>
+        <select class="filter-select" v-model="tabStartIndex" @change="saveFilter">
+          <option :value="null">{{ t.fromBeginning }}</option>
+          <option v-for="tab in tabsInWindow" :key="tab.index" :value="tab.index">
+            {{ tab.index + 1 }}. {{ tab.title.length > 45 ? tab.title.slice(0, 45) + '...' : tab.title }}
+          </option>
+        </select>
+      </div>
+
       <div class="filter-row">
-        <label class="filter-label">扫描站点</label>
+        <label class="filter-label">{{ t.scanSites }}</label>
         <div class="site-checks">
           <label v-for="site in ALL_SITES" :key="site" class="checkbox-label">
             <input
@@ -110,13 +176,16 @@ async function sendFiltered() {
     </section>
 
     <button class="btn-send" :disabled="loading || sites.length === 0" @click="sendFiltered">
-      {{ loading ? '处理中...' : '高级发送' }}
+      {{ loading ? t.processing : t.advancedSend }}
     </button>
 
     <section v-if="processed" class="results">
+      <div v-if="skippedTabs.length" class="skipped-warning">
+        <p v-for="u in skippedTabs" :key="u" class="skipped-item">{{ u }}: {{ t.tabSuspended }}</p>
+      </div>
+
       <div class="result-header">
-        <span class="result-count">找到 {{ results.length }} 个 Mod</span>
-        <span v-if="results.length && copied" class="copied">已复制到剪贴板</span>
+        <span class="result-count">{{ foundMods(results.length) }}</span>
       </div>
 
       <ul v-if="results.length" class="mod-list">
@@ -127,12 +196,22 @@ async function sendFiltered() {
           <a :href="mod.url" target="_blank" class="mod-slug">{{ mod.slug }}</a>
         </li>
       </ul>
-      <p v-else class="empty">未找到相关 Mod 页面</p>
+      <p v-else class="empty">{{ t.noMods }}</p>
 
       <div v-if="errors.length" class="errors">
         <p v-for="(err, i) in errors" :key="i" class="error-item">{{ err }}</p>
       </div>
     </section>
+
+    <div v-if="pendingSuspended" class="modal-overlay" @click.self="cancelConfirm">
+      <div class="modal">
+        <pre class="modal-text">{{ confirmSend(pendingSuspended) }}</pre>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="cancelConfirm">{{ t.cancel }}</button>
+          <button class="btn-send btn-confirm" @click="acceptConfirm">{{ t.confirm }}</button>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -185,7 +264,9 @@ h1 {
 
 .filter-select {
   flex: 1;
-  padding: 8px 10px;
+  min-width: 160px;
+  max-width: 100%;
+  padding: 8px 12px;
   border: 1px solid #dbe4ed;
   border-radius: 6px;
   font-size: 13px;
@@ -193,6 +274,9 @@ h1 {
   color: #17202a;
   cursor: pointer;
   outline: none;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .filter-select:focus {
@@ -252,11 +336,6 @@ h1 {
   font-size: 13px;
   font-weight: 700;
   color: #17202a;
-}
-
-.copied {
-  font-size: 11px;
-  color: #1f7a5f;
 }
 
 .mod-list {
@@ -321,4 +400,69 @@ h1 {
   color: #dc2626;
   margin: 0 0 4px;
 }
+
+.skipped-warning {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.skipped-item {
+  font-size: 12px;
+  color: #dc2626;
+  margin: 0 0 3px;
+  word-break: break-all;
+}
+
+.skipped-item:last-child { margin-bottom: 0; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-text {
+  margin: 0 0 16px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #333;
+  font-family: inherit;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 8px 16px;
+  border: 1px solid #dbe4ed;
+  border-radius: 6px;
+  background: #fff;
+  color: #557086;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-cancel:hover { background: #f6f8fb; }
+
+.btn-confirm { margin-bottom: 0; }
 </style>

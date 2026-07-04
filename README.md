@@ -8,7 +8,7 @@
 src/
   types.ts              # 共享类型定义
   App.vue               # Popup 页面（主界面）
-  Options.vue           # 选项页面（预设编辑）
+  Options.vue           # 选项页面（筛选条件编辑）
   options.ts            # 选项页入口
   main.ts               # Popup 入口
   style.css             # 全局样式
@@ -66,18 +66,18 @@ scanAndSend()
     │     │
     │     ▼
     │   processTab() 逐个处理
-    │     ├─ mcmod.cn → fetch HTML → 提取 modrinth/curseforge 链接 → 解析
-    │     ├─ modrinth.com → 直接解析 URL
-    │     └─ curseforge.com → 直接解析 URL
+    │     ├─ mcmod.cn → 读取已打开 tab 的 HTML → 提取首个 modrinth/curseforge 链接 → 解析
+    │     ├─ modrinth.com → 直接解析 URL + 从 canonical/body 补充 projectId/slug
+    │     └─ curseforge.com → 直接解析 URL + 从 canonical/body 补充 projectId/slug
     │     │
     │     ▼
-    │   去重（按 platform:slug）
+    │   去重（按 platform:slug:versionId）
     │
     └─ 2. sendToRemote() 发送 POST 请求
           │
           ▼
         POST http://127.0.0.1:18801
-        Body: [{"p":"mr","id":null,"slug":"xxx","file":"xxx"}, ...]
+        Body: [{"p":"mr","id":null,"slug":"xxx","file":""}, ...]
 ```
 
 ## URL 解析规则
@@ -91,39 +91,47 @@ https://modrinth.com/mod/fabric-api → { platform: 'modrinth', slug: 'fabric-ap
 https://modrinth.com/mod/sodium/version/abc123 → { platform: 'modrinth', slug: 'sodium', versionId: 'abc123' }
 ```
 
+直接打开的 Modrinth 页面会通过 `extractFromTab` 从页面 DOM 补充 `projectId`（canonical `/project/<base62>` / `maven.modrinth:<id>:` / `"project_id":"<base62>"`）与 `versionId`（canonical `/version/<id>` / `maven.modrinth:<id>:<versionId>`）。
+
 ### CurseForge
 
-匹配路径: `/minecraft/mc-mods/`
+匹配路径: `/minecraft/mc-mods/`（支持 `www.curseforge.com` 与 `legacy.curseforge.com`）
 
 ```
 https://www.curseforge.com/minecraft/mc-mods/jei → { platform: 'curseforge', slug: 'jei' }
+https://www.curseforge.com/minecraft/mc-mods/jei/files/123456 → { platform: 'curseforge', slug: 'jei', versionId: '123456' }
+https://legacy.curseforge.com/minecraft/mc-mods/jei → { platform: 'curseforge', slug: 'jei' }
 ```
+
+直接打开的 CurseForge 页面会通过 `extractFromTab` 从页面 DOM 补充 `projectId`（`data-project-id` / `project-id` / `"identifier"` / `"projectId"` / `"project_id"` 多正则兜底）与 `versionId`（canonical `/files/<id>`，legacy 页面兜底 `Elerium.ProjectFileDetails.projectFileID`）。
 
 ### MCMod
 
 不直接解析 URL，而是：
-1. 检测 `mcmod.cn` 域名
-2. Fetch 页面 HTML
-3. 正则提取所有 `href` 中包含 `modrinth.com` 或 `curseforge.com` 的链接
-4. 对提取的链接套用上述 Modrinth/CurseForge 解析
+1. 检测 URL 含 `www.mcmod.cn`（仅匹配 www 子域，其他子域忽略）
+2. 通过 `chrome.scripting.executeScript` 读取已打开 tab 的 `document.documentElement.outerHTML`
+3. 正则提取 `href` 中的外链：
+   - 直接 `href="https://modrinth.com/..."` / `href="https://curseforge.com/..."`
+   - 代理 `href="//link.mcmod.cn/target/<base64>"`，base64 解码后得到真实 URL
+4. 按出现顺序取第一个能解析为 Modrinth/CurseForge 的链接（一个 mcmod 页面只产出一个 mod）
 
-## 预设管理
+## 筛选配置
 
-存储位置: `chrome.storage.local` key `presets`
+存储位置: `chrome.storage.local` key `filter`
 
-默认预设:
-| ID | 名称 | 站点 |
-|---|---|---|
-| all | 全部站点 | mcmod, modrinth, curseforge |
-| modrinth | Modrinth | modrinth |
-| curseforge | CurseForge | curseforge |
-| mcmod | MCMod | mcmod |
+```typescript
+interface FilterConfig {
+  windowId: number | null // null = 全部窗口
+  sites: SiteType[]       // 启用的站点，默认全部
+}
+```
 
-选项页面支持:
-- 添加/删除预设
-- 双击名称重命名
-- 勾选/取消站点复选框
-- 自动保存
+选项页面（Options.vue）支持：
+- 选择扫描窗口（全部 / 指定窗口）
+- 勾选/取消站点（MCMod / Modrinth / CurseForge）
+- 自动保存到 `chrome.storage.local`
+
+Popup 的"发送所有页面"无视筛选条件扫描全部；Options 的"高级发送"按筛选条件扫描。
 
 ## 远程 API
 
@@ -134,30 +142,38 @@ POST http://127.0.0.1:18801
 Content-Type: application/json
 
 [
-  { "p": "mr", "id": null, "slug": "ae2",      "file": "ae2" },
-  { "p": "cf", "id": null, "slug": "jei",       "file": "jei" }
+  { "p": "mr", "id": null, "slug": "ae2",      "file": "" },
+  { "p": "cf", "id": null, "slug": "jei",       "file": "123456" }
 ]
 ```
 
 | 字段 | 说明 |
 |------|------|
 | `p`  | 平台代码：`mr` = Modrinth，`cf` = CurseForge |
-| `id` | 保留字段，当前为 `null` |
-| `slug` | Mod 标识符 |
-| `file` | 文件名（当前与 slug 相同） |
+| `id` | 项目 ID（Modrinth 为 base62 project-id，CurseForge 为数字 project-id，未提取到时为 `null`） |
+| `slug` | Mod 标识符（URL 中的 slug） |
+| `file` | 版本 ID（`versionId`，对应 Modrinth `/mod/<slug>/version/<id>` 或 CurseForge `/files/<id>`，未指定时为空串） |
 
 ## 权限
 
 ```json
 {
-  "permissions": ["storage", "tabs"],
-  "host_permissions": ["https://mcmod.cn/*", "http://127.0.0.1:18801/*"]
+  "permissions": ["storage", "tabs", "scripting", "windows"],
+  "host_permissions": [
+    "https://www.mcmod.cn/*",
+    "https://modrinth.com/*",
+    "https://www.curseforge.com/*",
+    "https://legacy.curseforge.com/*",
+    "http://127.0.0.1:18801/*"
+  ]
 }
 ```
 
-- `storage`: 预设持久化
+- `storage`: 筛选配置持久化
 - `tabs`: 查询所有标签页 URL
-- `host_permissions`: fetch mcmod.cn 页面 + 发送 POST 到本地服务
+- `scripting`: 向已打开的 tab 注入脚本读取 DOM（取代 fetch）
+- `windows`: 枚举窗口供 Options 页面选择
+- `host_permissions`: 在 mcmod/modrinth/curseforge 页面注入脚本 + 发送 POST 到本地服务
 
 ## 开发
 

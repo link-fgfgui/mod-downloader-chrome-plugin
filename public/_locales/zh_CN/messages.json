@@ -1,0 +1,31 @@
+{
+  "extName": { "message": "Mod Downloader" },
+  "extDescription": { "message": "从 MCMod、Modrinth、CurseForge 页面自动解析并下载 Mod。" },
+  "sendAll": { "message": "发送所有页面" },
+  "advancedSend": { "message": "高级发送" },
+  "processing": { "message": "处理中..." },
+  "foundMods": {
+    "message": "找到 $count$ 个 Mod",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "noMods": { "message": "未找到相关 Mod 页面" },
+  "errorPrefix": { "message": "错误" },
+  "subtitle": { "message": "配置筛选条件后发送。" },
+  "scanWindow": { "message": "扫描窗口" },
+  "allWindows": { "message": "全部窗口" },
+  "windowLabel": {
+    "message": "窗口 $n$",
+    "placeholders": { "n": { "content": "$1" } }
+  },
+  "current": { "message": "当前" },
+  "scanSites": { "message": "扫描站点" },
+  "tabSuspended": { "message": "标签页已休眠，请先切换到该页激活" },
+  "startAfterTab": { "message": "从此标签页之后开始" },
+  "fromBeginning": { "message": "从头开始" },
+  "confirmSend": {
+    "message": "以下 MCMod 标签页已休眠，将无法提取其中的模组链接：\n\n$tabs$\n\n仍要发送其余扫描结果？",
+    "placeholders": { "tabs": { "content": "$1" } }
+  },
+  "cancel": { "message": "取消" },
+  "confirm": { "message": "发送" }
+}

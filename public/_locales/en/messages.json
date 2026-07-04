@@ -1,0 +1,31 @@
+{
+  "extName": { "message": "Mod Downloader" },
+  "extDescription": { "message": "Auto-parse and download mods from MCMod, Modrinth, CurseForge pages." },
+  "sendAll": { "message": "Send All Pages" },
+  "advancedSend": { "message": "Advanced Send" },
+  "processing": { "message": "Processing..." },
+  "foundMods": {
+    "message": "Found $count$ mod(s)",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "noMods": { "message": "No mod pages found" },
+  "errorPrefix": { "message": "Error" },
+  "subtitle": { "message": "Configure filters then send." },
+  "scanWindow": { "message": "Scan Window" },
+  "allWindows": { "message": "All Windows" },
+  "windowLabel": {
+    "message": "Window $n$",
+    "placeholders": { "n": { "content": "$1" } }
+  },
+  "current": { "message": "current" },
+  "scanSites": { "message": "Scan Sites" },
+  "tabSuspended": { "message": "Tab is sleeping, please activate it first" },
+  "startAfterTab": { "message": "Start after this tab" },
+  "fromBeginning": { "message": "From beginning" },
+  "confirmSend": {
+    "message": "The following MCMod tabs are sleeping and their mod links cannot be extracted:\n\n$tabs$\n\nSend the remaining scan results anyway?",
+    "placeholders": { "tabs": { "content": "$1" } }
+  },
+  "cancel": { "message": "Cancel" },
+  "confirm": { "message": "Send" }
+}

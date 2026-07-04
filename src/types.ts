@@ -12,17 +12,21 @@ export type SiteType = 'mcmod' | 'modrinth' | 'curseforge'
 export interface FilterConfig {
   windowId: number | null
   sites: SiteType[]
+  tabStartIndex?: number | null
 }
 
 export type MessageAction = 'scanAll' | 'scanFiltered'
 
 export interface ScanMessage {
   action: MessageAction
+  force?: boolean
 }
 
 export interface ScanResult {
   mods: ModInfo[]
   errors: string[]
+  needConfirm?: boolean
+  suspendedTabs?: string[]
 }
 
 export const ALL_SITES: SiteType[] = ['mcmod', 'modrinth', 'curseforge']
