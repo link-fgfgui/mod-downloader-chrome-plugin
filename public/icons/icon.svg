@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" role="img" aria-labelledby="title desc">
+  <title id="title">Mod Downloader</title>
+  <desc id="desc">A mod block with a downward download arrow</desc>
+  <rect width="300" height="300" rx="60" fill="#185C4B"/>
+  <path d="M49 111 130 67l81 44-81 45z" fill="#DFF5EC"/>
+  <path d="m49 111 81 45v85l-81-45z" fill="#FFFFFF"/>
+  <path d="m130 156 81-45v85l-81 45z" fill="#B8DDCF"/>
+  <path d="m49 111 81 45 81-45M130 156v85" fill="none" stroke="#123C34" stroke-linejoin="round" stroke-width="12"/>
+  <path d="M214 126v66h28l-48 52-48-52h28v-66z" fill="#FFB547" stroke="#123C34" stroke-linejoin="round" stroke-width="12"/>
+</svg>
