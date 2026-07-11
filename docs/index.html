@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy / 隐私政策 — Mod Downloader</title>
+  <style>
+    :root {
+      --ink: #1B2A33;
+      --paper: #F6F8FB;
+      --card: #FFFFFF;
+      --accent: #1F7A5F;
+      --muted: #557086;
+      --border: #DBE4ED;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.7;
+      padding: 0;
+    }
+
+    .hero {
+      background: var(--ink);
+      color: #fff;
+      padding: 56px 24px 48px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .hero p {
+      color: #9FB4B0;
+      font-size: 14px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: -24px auto 48px;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 16px;
+    }
+
+    .lang-toggle {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .lang-btn {
+      padding: 6px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .lang-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .lang-btn:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    [data-lang] { display: none; }
+    [data-lang="zh"].show,
+    [data-lang="en"].show { display: block; }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 24px 0 12px;
+    }
+
+    h2:first-child { margin-top: 0; }
+
+    p, li {
+      font-size: 15px;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    ul {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    li { margin-bottom: 6px; }
+
+    code {
+      background: #EEF3F2;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'SF Mono', Consolas, monospace;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .card { transition: box-shadow 0.2s; }
+      .card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Mod Downloader</h1>
+  <p>Privacy Policy / 隐私政策</p>
+</div>
+
+<div class="container">
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="switchLang('zh')">中文</button>
+    <button class="lang-btn" onclick="switchLang('en')">English</button>
+  </div>
+
+  <div class="card">
+    <!-- ========== 中文 ========== -->
+    <div data-lang="zh" class="show">
+      <h2>隐私政策</h2>
+      <p>最后更新：2026 年 7 月 12 日</p>
+
+      <h2>概述</h2>
+      <p>Mod Downloader（以下简称"本扩展"）是一款浏览器扩展，用于从 MCMod、Modrinth、CurseForge 页面中自动解析 Minecraft Mod 信息，并将结果发送到用户本地运行的 Mod 下载工具。本扩展不收集、不存储、不传输任何个人数据到外部服务器。</p>
+
+      <h2>数据收集</h2>
+      <p>本扩展在运行时会读取以下信息：</p>
+      <ul>
+        <li><strong>标签页 URL</strong>：通过 <code>chrome.tabs</code> API 获取当前打开的标签页地址，用于识别 Mod 页面。</li>
+        <li><strong>页面 HTML 内容</strong>：通过 <code>chrome.scripting.executeScript</code> 在 MCMod、Modrinth、CurseForge 页面中注入脚本，读取页面 DOM 以提取 Mod 的 slug、项目 ID 和版本 ID 等元信息。</li>
+      </ul>
+
+      <h2>数据使用与存储</h2>
+      <ul>
+        <li>上述数据仅在扩展运行期间临时使用，用于解析 Mod 信息。</li>
+        <li>扩展不会将数据持久化存储到任何远程服务器。</li>
+        <li>扩展不会使用 <code>chrome.storage</code> 存储任何页面内容，仅存储用户配置的筛选条件（扫描窗口、启用的站点）。</li>
+      </ul>
+
+      <h2>数据传输</h2>
+      <p>解析后的 Mod 信息（包括平台、slug、项目 ID、版本 ID）会通过 HTTP POST 请求发送到用户本地运行的 Mod 下载工具：</p>
+      <ul>
+        <li>目标地址：<code>http://127.0.0.1:18801</code></li>
+        <li>该地址为本地回环地址，数据不会离开用户设备。</li>
+        <li>本扩展不向任何外部服务器发送数据。</li>
+      </ul>
+
+      <h2>第三方网站</h2>
+      <p>本扩展在以下第三方网站上注入脚本以读取页面内容：</p>
+      <ul>
+        <li><code>www.mcmod.cn</code></li>
+        <li><code>modrinth.com</code></li>
+        <li><code>www.curseforge.com</code></li>
+        <li><code>legacy.curseforge.com</code></li>
+      </ul>
+      <p>注入脚本仅读取页面 DOM 以提取 Mod 元信息，不会修改页面内容、不会跟踪用户行为、不会收集个人身份信息。</p>
+
+      <h2>权限说明</h2>
+      <ul>
+        <li><strong>storage</strong>：存储用户配置的筛选条件。</li>
+        <li><strong>tabs</strong>：查询所有标签页的 URL，用于识别 Mod 页面。</li>
+        <li><strong>scripting</strong>：在 Mod 页面中注入脚本以读取 DOM。</li>
+        <li><strong>windows</strong>：枚举浏览器窗口，供选项页面供用户选择扫描范围。</li>
+      </ul>
+
+      <h2>儿童隐私</h2>
+      <p>本扩展不针对 13 岁以下儿童，不会故意收集儿童的个人信息。</p>
+
+      <h2>隐私政策变更</h2>
+      <p>如本隐私政策发生重大变更，将在扩展更新日志中通知用户。</p>
+
+      <h2>联系方式</h2>
+      <p>如有隐私相关问题，请通过 <a href="https://github.com/link-fgfgui/mod-downloader-chrome-plugin/issues" target="_blank">GitHub Issues</a> 联系我们。</p>
+    </div>
+
+    <!-- ========== English ========== -->
+    <div data-lang="en">
+      <h2>Privacy Policy</h2>
+      <p>Last updated: July 12, 2026</p>
+
+      <h2>Overview</h2>
+      <p>Mod Downloader (the "Extension") is a browser extension that automatically parses Minecraft mod information from MCMod, Modrinth, and CurseForge pages, and sends the results to a locally running mod download tool. This Extension does not collect, store, or transmit any personal data to external servers.</p>
+
+      <h2>Data Collection</h2>
+      <p>The Extension reads the following information during operation:</p>
+      <ul>
+        <li><strong>Tab URLs</strong>: Uses the <code>chrome.tabs</code> API to get URLs of open tabs for identifying mod pages.</li>
+        <li><strong>Page HTML content</strong>: Injects scripts via <code>chrome.scripting.executeScript</code> into MCMod, Modrinth, and CurseForge pages to read the DOM and extract mod metadata (slug, project ID, version ID).</li>
+      </ul>
+
+      <h2>Data Usage and Storage</h2>
+      <ul>
+        <li>The above data is only used temporarily during extension runtime to parse mod information.</li>
+        <li>The Extension does not persistently store data on any remote server.</li>
+        <li>The Extension does not use <code>chrome.storage</code> to store page content. Only user-configured filter settings (scan window, enabled sites) are stored locally.</li>
+      </ul>
+
+      <h2>Data Transmission</h2>
+      <p>Parsed mod information (platform, slug, project ID, version ID) is sent via HTTP POST to the user's locally running mod download tool:</p>
+      <ul>
+        <li>Target address: <code>http://127.0.0.1:18801</code></li>
+        <li>This is a local loopback address; data never leaves the user's device.</li>
+        <li>The Extension does not send data to any external server.</li>
+      </ul>
+
+      <h2>Third-Party Websites</h2>
+      <p>The Extension injects scripts into the following third-party websites to read page content:</p>
+      <ul>
+        <li><code>www.mcmod.cn</code></li>
+        <li><code>modrinth.com</code></li>
+        <li><code>www.curseforge.com</code></li>
+        <li><code>legacy.curseforge.com</code></li>
+      </ul>
+      <p>Injected scripts only read the page DOM to extract mod metadata. They do not modify page content, track user behavior, or collect personally identifiable information.</p>
+
+      <h2>Permissions</h2>
+      <ul>
+        <li><strong>storage</strong>: Stores user-configured filter settings.</li>
+        <li><strong>tabs</strong>: Queries URLs of all open tabs to identify mod pages.</li>
+        <li><strong>scripting</strong>: Injects scripts into mod pages to read the DOM.</li>
+        <li><strong>windows</strong>: Enumerates browser windows for the options page to let users select scan scope.</li>
+      </ul>
+
+      <h2>Children's Privacy</h2>
+      <p>This Extension is not directed at children under 13 and does not knowingly collect personal information from children.</p>
+
+      <h2>Changes to This Policy</h2>
+      <p>Users will be notified of significant changes to this Privacy Policy through the extension's update changelog.</p>
+
+      <h2>Contact</h2>
+      <p>For privacy-related questions, please contact us via <a href="https://github.com/link-fgfgui/mod-downloader-chrome-plugin/issues" target="_blank">GitHub Issues</a>.</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  &copy; 2026 Mod Downloader &middot; <a href="https://github.com/link-fgfgui/mod-downloader-chrome-plugin" target="_blank">GitHub</a>
+</div>
+
+<script>
+  function switchLang(lang) {
+    document.querySelectorAll('[data-lang]').forEach(el => {
+      el.classList.toggle('show', el.dataset.lang === lang);
+    });
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === lang || 
+        (lang === 'zh' && btn.textContent.trim() === '中文') ||
+        (lang === 'en' && btn.textContent.trim() === 'English'));
+    });
+  }
+</script>
+
+</body>
+</html>

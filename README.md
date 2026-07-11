@@ -2,6 +2,8 @@
 
 从 MCMod、Modrinth、CurseForge 页面自动解析 Mod 信息的 Chrome 扩展。
 
+[隐私政策 / Privacy Policy](https://link-fgfgui.github.io/mod-downloader-chrome-plugin/)
+
 ## 架构
 
 ```
@@ -173,7 +175,7 @@ Content-Type: application/json
 - `tabs`: 查询所有标签页 URL
 - `scripting`: 向已打开的 tab 注入脚本读取 DOM（取代 fetch）
 - `windows`: 枚举窗口供 Options 页面选择
-- `host_permissions`: 在 mcmod/modrinth/curseforge 页面注入脚本 + 发送 POST 到本地服务
+- `host_permissions`: 在 mcmod/modrinth/curseforge 页面注入脚本读取 DOM；`http://127.0.0.1:18801/*` 用于将解析后的 Mod 信息发送到本地运行的 Mod 下载工具（数据不离开本机）
 
 ## 开发
 

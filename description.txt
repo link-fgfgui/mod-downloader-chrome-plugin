@@ -1,0 +1,26 @@
+Mod Downloader is a browser extension that streamlines Minecraft mod management by automatically detecting mod pages across MCMod, Modrinth, and CurseForge.
+
+How it works:
+- Click "Send All Pages" to scan all open tabs, or use "Advanced Send" to filter by window and site.
+- The extension reads mod information (slug, project ID, version ID) from matching pages.
+- Results are sent to a locally running mod download tool via HTTP (127.0.0.1:18801).
+
+Supported platforms:
+- MCMod (www.mcmod.cn) – extracts mod links from page content
+- Modrinth (modrinth.com) – parses mod and version pages
+- CurseForge (www.curseforge.com, legacy.curseforge.com) – parses mod and file pages
+
+Features:
+- Scan all windows or a specific window
+- Start scanning from a specific tab position
+- Enable/disable individual sites
+- Deduplication of detected mods
+- Handles suspended/frozen tabs gracefully
+
+Permissions:
+- tabs: query open tab URLs
+- scripting: read page DOM for mod metadata
+- storage: save filter preferences
+- windows: enumerate browser windows
+
+No data is sent to external servers. All communication stays on your local machine.
