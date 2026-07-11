@@ -1,4 +1,4 @@
-Mod Downloader is a browser extension that streamlines Minecraft mod management by automatically detecting mod pages across MCMod, Modrinth, and CurseForge.
+Mod Downloader Companion is a browser extension for the Mod Downloader desktop app that streamlines Minecraft mod management by automatically detecting mod pages across MCMod, Modrinth, and CurseForge.
 
 How it works:
 - Click "Send All Pages" to scan all open tabs, or use "Advanced Send" to filter by window and site.

@@ -1,6 +1,6 @@
 {
   "extName": { "message": "Mod Downloader" },
-  "extDescription": { "message": "从 MCMod、Modrinth、CurseForge 页面自动解析并下载 Mod。" },
+  "extDescription": { "message": "Mod Downloader 桌面应用程序的浏览器扩展，从 MCMod、Modrinth、CurseForge 页面自动解析 Mod 信息。" },
   "sendAll": { "message": "发送所有页面" },
   "advancedSend": { "message": "高级发送" },
   "processing": { "message": "处理中..." },

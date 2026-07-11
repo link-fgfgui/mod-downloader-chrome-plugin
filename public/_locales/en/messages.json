@@ -1,6 +1,6 @@
 {
   "extName": { "message": "Mod Downloader" },
-  "extDescription": { "message": "Auto-parse and download mods from MCMod, Modrinth, CurseForge pages." },
+  "extDescription": { "message": "Browser extension for the Mod Downloader desktop app. Auto-parse mod information from MCMod, Modrinth, CurseForge pages." },
   "sendAll": { "message": "Send All Pages" },
   "advancedSend": { "message": "Advanced Send" },
   "processing": { "message": "Processing..." },

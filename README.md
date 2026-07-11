@@ -1,6 +1,6 @@
-# Mod Downloader Chrome Extension
+# Mod Downloader Extension
 
-从 MCMod、Modrinth、CurseForge 页面自动解析 Mod 信息的 Chrome 扩展。
+Mod Downloader 桌面应用程序的浏览器扩展，从 MCMod、Modrinth、CurseForge 页面自动解析 Mod 信息。
 
 [隐私政策 / Privacy Policy](https://link-fgfgui.github.io/mod-downloader-chrome-plugin/)
 
