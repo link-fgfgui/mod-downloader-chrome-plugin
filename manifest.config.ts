@@ -4,7 +4,7 @@ const manifest: ManifestV3Export = {
   manifest_version: 3,
   name: '__MSG_extName__',
   description: '__MSG_extDescription__',
-  version: '1.0.0',
+  version: '1.0.1',
   default_locale: 'zh_CN',
   action: {
     default_popup: 'index.html',
