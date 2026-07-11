@@ -4,7 +4,7 @@ const manifest: ManifestV3Export = {
   manifest_version: 3,
   name: '__MSG_extName__',
   description: '__MSG_extDescription__',
-  version: '0.1.0',
+  version: '1.0.0',
   default_locale: 'zh_CN',
   action: {
     default_popup: 'index.html',
@@ -25,6 +25,9 @@ const manifest: ManifestV3Export = {
   options_ui: {
     page: 'options.html',
     open_in_tab: true,
+  },
+  content_security_policy: {
+    extension_pages: "script-src 'self'; object-src 'self'",
   },
 }
 
