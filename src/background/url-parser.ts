@@ -24,28 +24,38 @@ export function parseCurseforgeUrl(url: string): ModInfo | null {
   }
 }
 
-export function extractModLinksFromHtml(html: string): string[] {
+export function extractModLinks(urls: string[]): string[] {
   const links: string[] = []
 
-  const directPattern = /href="(https?:\/\/(?:modrinth\.com|curseforge\.com)[^"]*)"/gi
-  let match
-  while ((match = directPattern.exec(html)) !== null) {
-    links.push(match[1])
-  }
-
-  const proxyPattern = /href="(?:https?:)?\/\/link\.mcmod\.cn\/target\/([A-Za-z0-9+/=]+)"/gi
-  while ((match = proxyPattern.exec(html)) !== null) {
+  for (const url of urls) {
     try {
-      const decoded = atob(match[1])
-      if (decoded.includes('modrinth.com') || decoded.includes('curseforge.com')) {
+      const parsed = new URL(url, 'https://www.mcmod.cn')
+      if (parsed.hostname === 'modrinth.com' || ['curseforge.com', 'www.curseforge.com', 'legacy.curseforge.com'].includes(parsed.hostname)) {
+        links.push(parsed.href)
+        continue
+      }
+      if (parsed.hostname !== 'link.mcmod.cn' || !parsed.pathname.startsWith('/target/')) continue
+
+      const encoded = parsed.pathname.slice('/target/'.length)
+      const decoded = atob(decodeURIComponent(encoded))
+      const target = new URL(decoded)
+      if (target.hostname === 'modrinth.com' || ['curseforge.com', 'www.curseforge.com', 'legacy.curseforge.com'].includes(target.hostname)) {
         links.push(decoded)
       }
     } catch {
-      // invalid base64, skip
+      // invalid URL/base64, skip
     }
   }
 
   return [...new Set(links)]
+}
+
+export function extractModLinksFromHtml(html: string): string[] {
+  const urls: string[] = []
+  const hrefPattern = /href="([^"]+)"/gi
+  let match: RegExpExecArray | null
+  while ((match = hrefPattern.exec(html)) !== null) urls.push(match[1])
+  return extractModLinks(urls)
 }
 
 export function parseModUrl(url: string): ModInfo | null {

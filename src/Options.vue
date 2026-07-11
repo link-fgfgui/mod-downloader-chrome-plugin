@@ -62,16 +62,16 @@ onMounted(async () => {
 
 watch(windowId, async (newWin) => {
   await refreshTabs(newWin)
-  saveFilter()
+  await saveFilter()
 })
 
-function saveFilter() {
+async function saveFilter() {
   const filter: FilterConfig = {
     windowId: windowId.value,
     sites: sites.value,
     tabStartIndex: windowId.value == null ? null : tabStartIndex.value,
   }
-  chrome.storage.local.set({ filter })
+  await chrome.storage.local.set({ filter })
 }
 
 function toggleSite(site: SiteType) {
@@ -85,7 +85,7 @@ function toggleSite(site: SiteType) {
 }
 
 async function sendFiltered() {
-  saveFilter()
+  await saveFilter()
   loading.value = true
   processed.value = false
   results.value = []

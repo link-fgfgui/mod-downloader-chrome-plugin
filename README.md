@@ -30,14 +30,9 @@ interface ModInfo {
   platform: 'modrinth' | 'curseforge'
   slug: string           // Mod 标识符
   url: string            // 标准化 URL
+  projectId: string | null // 平台项目 ID
+  versionId: string | null // 指定的版本/文件 ID
   originalTabUrl?: string // 来源标签页 URL
-}
-
-// 预设配置
-interface Preset {
-  id: string
-  name: string
-  sites: SiteType[]      // 包含的站点列表
 }
 
 // 扫描结果
@@ -59,7 +54,7 @@ chrome.runtime.sendMessage()
 service-worker 接收消息
     │
     ├─ action: "scanAll"      → 扫描所有三个站点
-    └─ action: "scanByPreset" → 按预设站点筛选
+    └─ action: "scanFiltered" → 按保存的窗口、标签页位置和站点筛选
     │
     ▼
 scanAndSend()
@@ -111,8 +106,8 @@ https://legacy.curseforge.com/minecraft/mc-mods/jei → { platform: 'curseforge'
 
 不直接解析 URL，而是：
 1. 检测 URL 含 `www.mcmod.cn`（仅匹配 www 子域，其他子域忽略）
-2. 通过 `chrome.scripting.executeScript` 读取已打开 tab 的 `document.documentElement.outerHTML`
-3. 正则提取 `href` 中的外链：
+2. 通过 `chrome.scripting.executeScript` 读取已打开 tab 的 `document.links`
+3. 解析并筛选其中的外链：
    - 直接 `href="https://modrinth.com/..."` / `href="https://curseforge.com/..."`
    - 代理 `href="//link.mcmod.cn/target/<base64>"`，base64 解码后得到真实 URL
 4. 按出现顺序取第一个能解析为 Modrinth/CurseForge 的链接（一个 mcmod 页面只产出一个 mod）
@@ -125,11 +120,13 @@ https://legacy.curseforge.com/minecraft/mc-mods/jei → { platform: 'curseforge'
 interface FilterConfig {
   windowId: number | null // null = 全部窗口
   sites: SiteType[]       // 启用的站点，默认全部
+  tabStartIndex?: number | null // 仅扫描此标签页之后的标签页
 }
 ```
 
 选项页面（Options.vue）支持：
 - 选择扫描窗口（全部 / 指定窗口）
+- 选择从指定标签页之后开始扫描
 - 勾选/取消站点（MCMod / Modrinth / CurseForge）
 - 自动保存到 `chrome.storage.local`
 

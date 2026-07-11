@@ -1,5 +1,5 @@
 import type { ModInfo, FilterConfig, ScanMessage, ScanResult, SiteType } from '../types'
-import { isMcmodUrl, parseModUrl, extractModLinksFromHtml } from './url-parser'
+import { isMcmodUrl, parseModUrl, extractModLinks } from './url-parser'
 
 const SITE_HOSTS: Record<SiteType, string[]> = {
   mcmod: ['www.mcmod.cn'],
@@ -8,6 +8,7 @@ const SITE_HOSTS: Record<SiteType, string[]> = {
 }
 
 const REMOTE_URL = 'http://127.0.0.1:18801'
+const REMOTE_TIMEOUT_MS = 10_000
 
 interface RemotePayload {
   p: 'mr' | 'cf'
@@ -16,16 +17,16 @@ interface RemotePayload {
   file: string
 }
 
-async function fetchTabHtml(tabId: number): Promise<string> {
+async function fetchTabLinks(tabId: number): Promise<string[]> {
   const results = await chrome.scripting.executeScript({
     target: { tabId },
-    func: () => document.documentElement.outerHTML,
+    func: () => Array.from(document.links, link => link.href),
   })
-  const html = results?.[0]?.result
-  if (typeof html !== 'string' || html.length === 0) {
-    throw new Error('executeScript 未返回页面 HTML')
+  const links = results?.[0]?.result
+  if (!Array.isArray(links)) {
+    throw new Error('executeScript 未返回页面链接')
   }
-  return html
+  return links.filter((link): link is string => typeof link === 'string')
 }
 
 interface TabExtractResult {
@@ -70,9 +71,9 @@ async function extractFromTab(tabId: number): Promise<TabExtractResult> {
           m = html.match(/\bproject-id="(\d+)"/)
           if (m) projectId = m[1]
         }
-        // curseforge 新版: "identifier":"231484"
+        // curseforge legacy: Elerium.ProjectFileDetails.projectID = "231484"
         if (!projectId) {
-          m = html.match(/"identifier"\s*:\s*"?(\d+)"?/)
+          m = html.match(/ProjectFileDetails\.projectID\s*=\s*"?(\d+)"?/)
           if (m) projectId = m[1]
         }
         if (!projectId) {
@@ -82,6 +83,11 @@ async function extractFromTab(tabId: number): Promise<TabExtractResult> {
         // curseforge: "project_id":"231484"
         if (!projectId) {
           m = html.match(/"project_id"\s*:\s*"?(\d+)"?/)
+          if (m) projectId = m[1]
+        }
+        // 新版 CurseForge 的项目 ID 位于 JSON-LD WebPage/CreativeWork 对象中
+        if (!projectId) {
+          m = html.match(/"@type"\s*:\s*"(?:WebPage|CreativeWork)"[^}]{0,2000}"identifier"\s*:\s*"?(\d+)"?/)
           if (m) projectId = m[1]
         }
         // modrinth: maven.modrinth:<project-id>:
@@ -148,6 +154,7 @@ async function sendToRemote(mods: ModInfo[]): Promise<string | null> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(REMOTE_TIMEOUT_MS),
   })
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
   return await resp.text()
@@ -174,8 +181,7 @@ async function processTab(tab: chrome.tabs.Tab, allowedSites: SiteType[]): Promi
   const suspended = !!(tab.discarded || tab.frozen)
 
   if (isMcmod && allowedSites.includes('mcmod')) {
-    const html = await fetchTabHtml(tab.id)
-    const links = extractModLinksFromHtml(html)
+    const links = extractModLinks(await fetchTabLinks(tab.id))
     // 每个 mcmod 页面代表一个模组，按 HTML 出现顺序取第一个即可
     for (const link of links) {
       const mod = parseModUrl(link)
