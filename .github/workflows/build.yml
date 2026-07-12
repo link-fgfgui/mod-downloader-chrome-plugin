@@ -47,11 +47,10 @@ jobs:
           zip -r ../extension-${{ steps.version.outputs.version }}.zip .
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: extension-${{ steps.version.outputs.version }}
           path: extension-*.zip
-          retention-days: 30
+          archive: false
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -59,3 +58,12 @@ jobs:
         with:
           files: extension-*.zip
           generate_release_notes: true
+
+      - name: Upload to Edge
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: wdzeng/edge-addon@v2
+        with:
+          product-id: 2855053b-f2be-427f-86f4-9ab7339e7d81
+          zip-path: extension-*.zip
+          api-key: ${{ secrets.EDGE_API_KEY }}
+          client-id: ${{ secrets.EDGE_CLIENT_ID }}
